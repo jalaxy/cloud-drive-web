@@ -1,0 +1,143 @@
+body {
+    padding: 20px 50px;
+    font: 14px sans-serif;
+}
+
+td {
+    padding: 5px;
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+input {
+    height: 16px;
+    width: 200px;
+    padding: 6px;
+    border: solid lightgray;
+    border-radius: 5px;
+    background-color: aliceblue;
+}
+
+input:hover {
+    border-color: gray;
+}
+
+input.invalid-input {
+    border: solid #ff8080;
+}
+
+input.invalid-input:hover {
+    border: solid red;
+}
+
+input:focus,
+input.invalid-input:focus {
+    outline: none;
+    border: solid cornflowerblue 2px;
+}
+
+button {
+    padding: 8px 12px;
+    background-color: inherit;
+    border: solid steelblue 1.5px;
+    border-radius: 5px;
+    margin: 10px;
+    font-size: 16px;
+}
+
+button:focus {
+    outline: none;
+    border-width: 2.5px;
+    padding: 7px 11px;
+}
+
+button:hover {
+    background-color: #b5cee3;
+    cursor: pointer;
+}
+
+#files {
+    margin: 20px;
+}
+
+.filebtn {
+    font-size: 16px;
+    padding: 6px;
+    margin: 4px;
+    border-radius: 5px;
+}
+
+.filebtn:hover {
+    cursor: pointer;
+    background-color: #c0c0c0;
+}
+
+.filename {
+    width: inherit;
+    word-break: break-all;
+}
+
+hr {
+    height: 1.5px;
+    background-color: steelblue;
+    border: none;
+}
+
+#index-form {
+    border: dashed steelblue 2px;
+    border-radius: 10px;
+    background-color: aliceblue;
+}
+
+#msgC,
+#msgE {
+    font-size: small;
+    color: red;
+}
+
+#rmenu.hide {
+    display: none;
+}
+
+#rmenu.show {
+    z-index: 1000;
+    position: absolute;
+    background: cornflowerblue;
+    border: 1.5px solid cornflowerblue;
+    display: block;
+}
+
+#rmenu a {
+    cursor: pointer;
+    display: block;
+    color: white;
+    padding: 10px 30px;
+    font-size: 16px;
+    text-decoration: none;
+}
+
+#rmenu a:hover {
+    background-color: aliceblue;
+    color: black;
+}
+
+#navibar {
+    width: 100%;
+    background-color: cadetblue;
+}
+
+#navibar button {
+    color: white;
+    border: solid white 1.5px;
+}
+
+#navibar button:focus {
+    outline: none;
+    border-width: 2.5px;
+    padding: 7px 11px;
+}
+
+#navibar button:hover {
+    background-color: hsl(182, 25%, 40%);
+    cursor: pointer;
+}
