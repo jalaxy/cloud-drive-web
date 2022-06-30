@@ -25,18 +25,25 @@ $userid = $res->fetch_assoc()['userid'];
 
 <body style="padding: 0; margin: 0;">
     <div id="rmenu" class='hide'>
-        <a href="javascript:void(0)" onclick="download();">下载 Download</a>
-        <a href="javascript:void(0)" onclick="copy();">复制 Copy</a>
-        <a href="javascript:void(0)" onclick="move();">移动 Move</a>
-        <a href="javascript:void(0)" onclick="remove();">删除 Remove</a>
+        <button onclick="download();" class="rbtn" id="download">下载 Download</button>
+        <button onclick="copy();" class="rbtn" id="copy">复制 Copy</button>
+        <button onclick="move();" class="rbtn" id="move">移动 Move</button>
+        <button onclick="rename();" class="rbtn" id="rename">重命名 Rename</button>
+        <button onclick="remove();" class="rbtn" id="remove">删除 Remove</button>
     </div>
     <table id="navibar">
         <tr>
             <td style="width: 0;">
-                <button>上传</button>
+                <button onclick="upload()" id="upload">上传</button>
             </td>
             <td style="width: 0;">
-                <button>向上</button>
+                <button onclick="upview()" id="upview">向上</button>
+            </td>
+            <td style="width: 0;">
+                <button onclick="mkdir()" id="newfolder">新建文件夹</button>
+            </td>
+            <td style="width: 0;">
+                <button onclick="paste()" id="paste" style="display: none">粘贴</button>
             </td>
             <td>
                 <center style="color: white;" id="caption"></center>
@@ -44,22 +51,155 @@ $userid = $res->fetch_assoc()['userid'];
         </tr>
     </table>
     <div id="files"></div>
+    <input type="file" name="upfile" id="upfile" style="display: none;">
     <script>
-        async function getfiles(path) {
+        var curdir = '';
+        var captiondef;
+        var hours = (new Date()).getHours();
+        var rtarget = null;
+        var selpath, selname;
+        var cppath = null;
+        var mvpath = null;
+
+        async function getfiles() {
             var filelist;
             var res = await fetch('/getfiles?' + new URLSearchParams({
-                'path': path
+                'path': curdir
             }));
-            return await res.json();
+            var files = await res.json();
+            if (files)
+                files.sort((a, b) => {
+                    if (a.type == b.type)
+                        return a.name < b.name ? -1 : 1;
+                    return a.type < b.type ? -1 : 1;
+                });
+            var elementfiles = document.querySelector('#files');
+            elementfiles.innerHTML = '';
+            if (curdir == '')
+                document.querySelector('#caption').innerHTML = captiondef;
+            else
+                document.querySelector('#caption').innerHTML = curdir.substr(1).split('/').join(' > ');
+            if (!files) return;
+            for (var i = 0; i < files.length; i++) {
+                var svg = document.createElement('div');
+                svg.appendChild(files[i].type == 'regular' ? newfilesvg() : newfoldersvg());
+                svg.setAttribute('style', 'width: 100px; height: 100px;');
+                var txt = document.createElement('div');
+                txt.innerHTML = files[i].name;
+                txt.setAttribute('style', 'text-align: center;');
+                txt.classList.add('filename');
+                txt.style.width = svg.style.width;
+                var btn = document.createElement('div');
+                btn.setAttribute('style', 'float: left');
+                btn.classList.add('filebtn');
+                btn.id = String(i);
+                btn.appendChild(svg);
+                btn.appendChild(txt);
+                elementfiles.appendChild(btn);
+                btn.onclick = (event) => {
+                    var idx = Number(event.currentTarget.id);
+                    if (files[idx].type == 'regular')
+                        window.location = '/files/' + '<?php echo $userid; ?>' + curdir + '/' + files[idx].name;
+                    else {
+                        curdir += '/' + files[idx].name;
+                        getfiles(curdir);
+                    }
+                };
+                btn.oncontextmenu = (event) => {
+                    rtarget = event.currentTarget;
+                    var rmenu = document.querySelector('#rmenu');
+                    rmenu.style.left = event.clientX + 'px';
+                    rmenu.style.top = event.clientY + 'px';
+                    rmenu.className = 'show';
+                    selname = files[Number(rtarget.id)].name
+                    selpath = curdir + '/' + selname;
+                    return false;
+                };
+            };
         }
 
-        function download() {}
+        function upview() {
+            var curdirsplit = curdir.split('/');
+            if (curdirsplit.length > 1)
+                curdir = curdirsplit.slice(0, curdirsplit.length - 1).join('/');
+            getfiles();
+        }
 
-        function copy() {}
+        function mkdir() {
+            var name = prompt("请输入文件夹名称");
+            if (name)
+                fetch('/mkdir?' + new URLSearchParams({
+                    'path': curdir + '/' + name
+                })).then((res) => res.json())
+                .then((msg) => getfiles());
+        }
 
-        function move() {}
+        function upload() {
+            var elementupfile = document.querySelector('#upfile');
+            elementupfile.click();
+            elementupfile.addEventListener('change', () => {
+                console.log(elementupfile.files[0]);
+                var formdata = new FormData();
+                formdata.append('upfile', elementupfile.files[0]);
+                fetch('/upload?' + new URLSearchParams({
+                        'path': curdir
+                    }), {
+                        method: 'POST',
+                        body: formdata
+                    }).then((res) => res.json())
+                    .then((msg) => getfiles());
+            });
+        }
 
-        function remove() {}
+        function paste() {
+            fetch((cppath ? '/copy?' : '/move?') + new URLSearchParams({
+                    'path': cppath ? cppath : mvpath,
+                    'newpath': curdir + '/' + (cppath ? cpname : mvname)
+                })).then((res) => res.json())
+                .then((msg) => getfiles());
+            cppath = mvpath = null;
+            document.querySelector('#paste').style.display = 'none';
+        }
+
+        function download() {
+            document.querySelector('#rmenu').className = 'hide';
+            window.open(selpath).focus();
+        }
+
+        function copy() {
+            document.querySelector('#rmenu').className = 'hide';
+            mvpath = null;
+            cppath = selpath;
+            cpname = selname;
+            document.querySelector('#paste').style.display = '';
+        }
+
+        function move() {
+            document.querySelector('#rmenu').className = 'hide';
+            cppath = null;
+            mvpath = selpath;
+            mvname = selname;
+            document.querySelector('#paste').style.display = '';
+        }
+
+        function remove() {
+            document.querySelector('#rmenu').className = 'hide';
+            fetch('/remove?' + new URLSearchParams({
+                    'path': selpath
+                })).then((res) => res.json())
+                .then((msg) => getfiles());
+        }
+
+        function rename() {
+            document.querySelector('#rmenu').className = 'hide';
+            var name = prompt("请输入文件夹名称");
+            if (name)
+                fetch('/move?' + new URLSearchParams({
+                    'path': selpath,
+                    'newpath': curdir + '/' + name
+                })).then((res) => res.json())
+                .then((msg) => getfiles());
+        }
 
         function newfoldersvg() {
             var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -91,9 +231,6 @@ $userid = $res->fetch_assoc()['userid'];
             return svg;
         }
 
-        var curdir = '/';
-        var captiondef;
-        var hours = (new Date()).getHours();
         if (hours >= 0 && hours <= 10) {
             captiondef = `早上好，`;
         } else if (hours > 10 && hours <= 14) {
@@ -103,40 +240,15 @@ $userid = $res->fetch_assoc()['userid'];
         } else if (hours > 18 && hours <= 24) {
             captiondef = `晚上好，`;
         }
-        captiondef += '<?php echo $_SESSION['username'] ?>';
-        document.querySelector('#caption').innerHTML = captiondef;
-        getfiles(curdir).then((files) => {
-            if (!files) return;
-            files.forEach(f => {
-                var svg = document.createElement('div');
-                svg.appendChild(f.type == 'regular' ? newfilesvg() : newfoldersvg());
-                svg.setAttribute('style', 'width: 100px; height: 100px;');
-                var txt = document.createElement('div');
-                txt.innerHTML = f.name;
-                txt.setAttribute('style', 'text-align: center;');
-                txt.classList.add('filename');
-                txt.style.width = svg.style.width;
-                var btn = document.createElement('div');
-                btn.setAttribute('style', 'float: left');
-                btn.classList.add('filebtn');
-                btn.appendChild(svg);
-                btn.appendChild(txt);
-                var elementfiles = document.querySelector('#files');
-                elementfiles.appendChild(btn);
-                btn.onclick = (event) => {};
-                btn.oncontextmenu = (event) => {
-                    var rmenu = document.querySelector('#rmenu');
-                    rmenu.className = 'show';
-                    rmenu.style.left = event.clientX + 'px';
-                    rmenu.style.top = event.clientY + 'px';
-                    return false;
-                };
-            });
-        });
+        captiondef += '<?php echo $_SESSION['username']; ?>';
         window.onmousedown = (event) => {
             var rmenu = document.querySelector('#rmenu');
-            rmenu.className = 'hide';
+            var rect = rmenu.getBoundingClientRect();
+            if (!(event.clientX > rect.left && event.clientX < rect.right &&
+                    event.clientY > rect.top && event.clientY < rect.bottom))
+                rmenu.className = 'hide';
         }
+        getfiles(curdir);
     </script>
 </body>
 
