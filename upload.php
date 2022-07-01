@@ -18,5 +18,4 @@ $userid = $res->fetch_assoc()['userid'];
 $rootdir = __DIR__ . '/files/' . $userid;
 $path = $rootdir . $_GET['path'] . '/' . $_FILES['upfile']['name'];
 move_uploaded_file($_FILES['upfile']['tmp_name'], $path);
-mkdir($dir, 0755);
 echo json_encode(array('msg' => 'success'));

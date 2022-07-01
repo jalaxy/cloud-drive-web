@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 .then(res => res.json())
                 .then(msg => {
                     if (msg['mE'] == 'Success')
-                        window.location.href = `/home`;
+                        window.location.href = `/home.php`;
                     else {
                         document.querySelector('#msgC').innerHTML = msg['mC'];
                         document.querySelector('#msgE').innerHTML = msg['mE'];

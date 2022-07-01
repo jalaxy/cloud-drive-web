@@ -34,19 +34,22 @@ $userid = $res->fetch_assoc()['userid'];
     <table id="navibar">
         <tr>
             <td style="width: 0;">
-                <button onclick="upload()" id="upload">上传</button>
-            </td>
-            <td style="width: 0;">
                 <button onclick="upview()" id="upview">向上</button>
-            </td>
-            <td style="width: 0;">
-                <button onclick="mkdir()" id="newfolder">新建文件夹</button>
             </td>
             <td style="width: 0;">
                 <button onclick="paste()" id="paste" style="display: none">粘贴</button>
             </td>
             <td>
                 <center style="color: white;" id="caption"></center>
+            </td>
+            <td style="width: 0;">
+                <span id="progress" style="display: none; color: white;">已上传 <span></span>%</span>
+            </td>
+            <td style="width: 0;">
+                <button onclick="upload()" id="upload">上传</button>
+            </td>
+            <td style="width: 0;">
+                <button onclick="mkdir()" id="newfolder">新建文件夹</button>
             </td>
         </tr>
     </table>
@@ -60,10 +63,11 @@ $userid = $res->fetch_assoc()['userid'];
         var selpath, selname;
         var cppath = null;
         var mvpath = null;
+        const elementupfile = document.querySelector('#upfile');
 
         async function getfiles() {
             var filelist;
-            var res = await fetch('/getfiles?' + new URLSearchParams({
+            var res = await fetch('/getfiles.php?' + new URLSearchParams({
                 'path': curdir
             }));
             var files = await res.json();
@@ -128,31 +132,18 @@ $userid = $res->fetch_assoc()['userid'];
         function mkdir() {
             var name = prompt("请输入文件夹名称");
             if (name)
-                fetch('/mkdir?' + new URLSearchParams({
+                fetch('/mkdir.php?' + new URLSearchParams({
                     'path': curdir + '/' + name
                 })).then((res) => res.json())
                 .then((msg) => getfiles());
         }
 
         function upload() {
-            var elementupfile = document.querySelector('#upfile');
             elementupfile.click();
-            elementupfile.addEventListener('change', () => {
-                console.log(elementupfile.files[0]);
-                var formdata = new FormData();
-                formdata.append('upfile', elementupfile.files[0]);
-                fetch('/upload?' + new URLSearchParams({
-                        'path': curdir
-                    }), {
-                        method: 'POST',
-                        body: formdata
-                    }).then((res) => res.json())
-                    .then((msg) => getfiles());
-            });
         }
 
         function paste() {
-            fetch((cppath ? '/copy?' : '/move?') + new URLSearchParams({
+            fetch((cppath ? '/copy.php?' : '/move.php?') + new URLSearchParams({
                     'path': cppath ? cppath : mvpath,
                     'newpath': curdir + '/' + (cppath ? cpname : mvname)
                 })).then((res) => res.json())
@@ -163,7 +154,7 @@ $userid = $res->fetch_assoc()['userid'];
 
         function download() {
             document.querySelector('#rmenu').className = 'hide';
-            window.open(selpath).focus();
+            window.open('/files/' + '<?php echo $userid; ?>' + selpath).focus();
         }
 
         function copy() {
@@ -184,7 +175,7 @@ $userid = $res->fetch_assoc()['userid'];
 
         function remove() {
             document.querySelector('#rmenu').className = 'hide';
-            fetch('/remove?' + new URLSearchParams({
+            fetch('/remove.php?' + new URLSearchParams({
                     'path': selpath
                 })).then((res) => res.json())
                 .then((msg) => getfiles());
@@ -194,7 +185,7 @@ $userid = $res->fetch_assoc()['userid'];
             document.querySelector('#rmenu').className = 'hide';
             var name = prompt("请输入文件夹名称");
             if (name)
-                fetch('/move?' + new URLSearchParams({
+                fetch('/move.php?' + new URLSearchParams({
                     'path': selpath,
                     'newpath': curdir + '/' + name
                 })).then((res) => res.json())
@@ -248,6 +239,27 @@ $userid = $res->fetch_assoc()['userid'];
                     event.clientY > rect.top && event.clientY < rect.bottom))
                 rmenu.className = 'hide';
         }
+        elementupfile.addEventListener('click', (event) => {
+            event.stopPropagation();
+        }, false);
+        elementupfile.addEventListener('change', () => {
+            var formdata = new FormData();
+            formdata.append('upfile', elementupfile.files[0]);
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener('progress', (event) => {
+                var p = document.querySelector('#progress');
+                p.style.display = '';
+                p.firstElementChild.innerHTML = Math.round(event.loaded / event.total * 100);
+            }, false);
+            xhr.addEventListener('load', () => {
+                document.querySelector('#progress').style.display = 'none';
+                getfiles();
+            }, false);
+            xhr.open('POST', '/upload.php?' + new URLSearchParams({
+                'path': curdir
+            }));
+            xhr.send(formdata);
+        });
         getfiles(curdir);
     </script>
 </body>
