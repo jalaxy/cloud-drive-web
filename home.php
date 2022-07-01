@@ -21,6 +21,7 @@ $userid = $res->fetch_assoc()['userid'];
 <head>
     <title>文件</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 
 <body style="padding: 0; margin: 0;">
@@ -35,6 +36,9 @@ $userid = $res->fetch_assoc()['userid'];
         <tr>
             <td style="width: 0;">
                 <button onclick="upview()" id="upview">向上</button>
+            </td>
+            <td style="width: 0;">
+                <button onclick="getfiles()" id="upview">刷新</button>
             </td>
             <td style="width: 0;">
                 <button onclick="paste()" id="paste" style="display: none">粘贴</button>
@@ -245,20 +249,43 @@ $userid = $res->fetch_assoc()['userid'];
         elementupfile.addEventListener('change', () => {
             var formdata = new FormData();
             formdata.append('upfile', elementupfile.files[0]);
-            const xhr = new XMLHttpRequest();
-            xhr.upload.addEventListener('progress', (event) => {
-                var p = document.querySelector('#progress');
-                p.style.display = '';
-                p.firstElementChild.innerHTML = Math.round(event.loaded / event.total * 100);
-            }, false);
-            xhr.addEventListener('load', () => {
-                document.querySelector('#progress').style.display = 'none';
-                getfiles();
-            }, false);
-            xhr.open('POST', '/upload.php?' + new URLSearchParams({
-                'path': curdir
-            }));
-            xhr.send(formdata);
+            var reader = new FileReader();
+            reader.addEventListener('load', (event) => {
+                var wa = CryptoJS.lib.WordArray.create(event.target.result);
+                const sha512 = CryptoJS.SHA512(wa).toString(CryptoJS.enc.Hex);
+                fetch('/upload.php?' + new URLSearchParams({
+                    'path': curdir,
+                    'hash': sha512,
+                    'name': elementupfile.files[0].name
+                })).then(res => res.json()).then(msg => {
+                    var p = document.querySelector('#progress');
+                    if (msg.msg == 'pending') {
+                        const xhr = new XMLHttpRequest();
+                        xhr.upload.addEventListener('progress', (event) => {
+                            p.style.display = '';
+                            p.firstElementChild.innerHTML = String(Math.round(event.loaded / event.total * 100));
+                        }, false);
+                        xhr.addEventListener('load', () => {
+                            setTimeout(() => {
+                                p.style.display = 'none';
+                            }, 2000);
+                            getfiles();
+                        }, false);
+                        xhr.open('POST', '/upload.php?' + new URLSearchParams({
+                            'path': curdir
+                        }));
+                        xhr.send(formdata);
+                    } else {
+                        p.style.display = '';
+                        p.firstElementChild.innerHTML = '（秒传）' + '100';
+                        setTimeout(() => {
+                            p.style.display = 'none';
+                        }, 2000);
+                        getfiles();
+                    }
+                });
+            });
+            reader.readAsArrayBuffer(elementupfile.files[0]);
         });
         getfiles(curdir);
     </script>
