@@ -270,6 +270,7 @@ $userid = $res->fetch_assoc()['userid'];
                                 p.style.display = 'none';
                             }, 2000);
                             getfiles();
+                            elementupfile.value = '';
                         }, false);
                         xhr.open('POST', '/upload.php?' + new URLSearchParams({
                             'path': curdir
