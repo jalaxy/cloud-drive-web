@@ -133,8 +133,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             invalidInput = document.querySelector('#passwd');
                         else if (msg['mE'] == 'Invalid code')
                             invalidInput = document.querySelector('#code');
-                        else if (msg['mE'] == 'Registration success')
-                            document.querySelector("#code").value = '';
+                        else if (msg['mE'] == 'Registration success') {
+                            document.querySelector('#code').value = '';
+                            document.querySelector('#enter').innerHTML = '登录 Login';
+                        }
                         invalidInput.classList.add('invalid-input');
                         invalidInput.addEventListener('input', (ev) => {
                             ev.target.classList.remove('invalid-input');
