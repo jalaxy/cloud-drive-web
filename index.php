@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </td>
                     </tr>
                     <tr height="60">
-                        <td colspan="3" style="text-align: center"><button style="margin: 0">进入 Enter</button></td>
+                        <td colspan="3" style="text-align: center"><button style="margin: 0" id="enter">登录 Login</button></td>
                     </tr>
                 </table>
             </form>
@@ -144,6 +144,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 .catch((error) => {
                     console.log(error);
                 });
+        }, false);
+        document.querySelector('#code').addEventListener('input', (event) => {
+            document.querySelector('#enter').innerHTML =
+                event.target.value == '' ? '登录 Login' : '注册 Register';
         }, false);
     </script>
 </body>
